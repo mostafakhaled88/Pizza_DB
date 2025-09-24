@@ -9,16 +9,17 @@ Purpose:
         2. Bulk insert raw CSV into staging (all VARCHAR).
         3. Insert from staging into bronze.PizzaSales 
            with proper type casting.
-    - Tracks execution time for monitoring.
+    - Tracks execution time, row count, and NULL date issues.
 
 Inputs:
     - CSV File: C:\SQLData\pizza_sales\pizza_sales.csv
 
 Outputs:
     - Reloaded bronze.PizzaSales with clean datatypes.
-
-Notes:
-    - Uses TRY_CAST for safe conversion (invalid values → NULL).
+    - Prints:
+        • Total rows inserted
+        • Rows with NULL dates
+        • Execution time
 =============================================================
 */
 CREATE OR ALTER PROCEDURE bronze.Load_PizzaSales
@@ -67,8 +68,8 @@ BEGIN
         TRY_CAST(order_id AS INT),
         pizza_name_id,
         TRY_CAST(quantity AS INT),
-        TRY_CAST(order_date AS DATE),   -- safe date parse
-        TRY_CAST(order_time AS TIME),   -- safe time parse
+        TRY_CONVERT(DATE, order_date, 105), -- dd-MM-yyyy safe parse
+        TRY_CAST(order_time AS TIME),
         TRY_CAST(unit_price AS DECIMAL(7,2)),
         TRY_CAST(total_price AS DECIMAL(10,2)),
         pizza_size,
@@ -83,7 +84,17 @@ BEGIN
     SET @EndTime = SYSDATETIME();
     SET @ElapsedMs = DATEDIFF(MILLISECOND, @StartTime, @EndTime);
 
+    ---------------------------------------------------------
+    -- Monitoring info
+    ---------------------------------------------------------
+    DECLARE @RowCount INT, @NullDates INT;
+
+    SELECT @RowCount = COUNT(*) FROM bronze.PizzaSales;
+    SELECT @NullDates = COUNT(*) FROM bronze.PizzaSales WHERE order_date IS NULL;
+
     PRINT 'Bronze.PizzaSales refresh completed successfully';
     PRINT 'Execution Time (ms): ' + CAST(@ElapsedMs AS VARCHAR(20));
+    PRINT 'Total Rows Inserted: ' + CAST(@RowCount AS VARCHAR(20));
+    PRINT 'Rows with NULL order_date: ' + CAST(@NullDates AS VARCHAR(20));
 END;
 GO
