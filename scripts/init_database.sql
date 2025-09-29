@@ -68,3 +68,4 @@ GO
 
 
 
+SELECT * FROM PizzaSales_Raw
