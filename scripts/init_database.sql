@@ -1,49 +1,47 @@
-/*
-=============================================================
-Create Database and Schemas for Pizza Sales Data Warehouse
-=============================================================
-Script Purpose:
-    - Drops and recreates the 'PizzaDW' database.
-    - Creates three schemas: bronze, silver, and gold.
-    - Sets the foundation for a layered architecture.
+/* =============================================================
+   Script: init_database.sql
+   Purpose:
+       - Initialize PizzaDB environment
+       - Create database (if missing)
+       - Create schemas for raw & clean layers
+       - Set recommended database options
 
-WARNING:
-    Running this script will DROP the entire 'PizzaDW' database if it exists. 
-    ALL DATA in the database will be permanently deleted. 
-    Proceed with caution and ensure you have proper backups.
-=============================================================
-*/
+   Usage:
+       Run this script once before deploying tables and procedures.
+============================================================= */
 
-USE master;
+---------------------------------------------------------------
+-- 1. Create Database (safe check)
+---------------------------------------------------------------
+IF DB_ID('PizzaDB') IS NULL
+    CREATE DATABASE PizzaDB;
 GO
 
--------------------------------------------------------------
--- 1. Drop and Recreate Database
--------------------------------------------------------------
-IF EXISTS (SELECT 1 FROM sys.databases WHERE name = 'PizzaDW')
-BEGIN
-    ALTER DATABASE PizzaDW SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE PizzaDW;
-END;
+---------------------------------------------------------------
+-- 2. Switch context to PizzaDB
+---------------------------------------------------------------
+USE PizzaDB;
 GO
 
-CREATE DATABASE PizzaDW;
+---------------------------------------------------------------
+-- 3. Create Schemas
+--    raw   = stores raw CSV loads
+--    clean = stores cleaned & transformed data
+---------------------------------------------------------------
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'raw')
+    EXEC('CREATE SCHEMA raw');
 GO
 
-USE PizzaDW;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'clean')
+    EXEC('CREATE SCHEMA clean');
 GO
 
--------------------------------------------------------------
--- 2. Create Schemas
--------------------------------------------------------------
--- Raw landing data from source systems
-CREATE SCHEMA bronze;
+---------------------------------------------------------------
+-- 4. Set Recommended Database Options
+---------------------------------------------------------------
+ALTER DATABASE PizzaDB SET RECOVERY SIMPLE;         -- simplify logging
+ALTER DATABASE PizzaDB SET ANSI_NULLS ON;           -- standard null handling
+ALTER DATABASE PizzaDB SET QUOTED_IDENTIFIER ON;    -- enforce quoted identifiers
 GO
 
--- Cleaned, transformed, business-ready tables
-CREATE SCHEMA silver;
-GO
-
--- Final curated data for reporting/analytics (usually Views)
-CREATE SCHEMA gold;
-GO
+PRINT 'Pizza DB environment initialized successfully.';
