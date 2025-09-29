@@ -1,5 +1,5 @@
 -- =============================================
----File:sp_load_pizza_sales_clean
+---File:sp_load_pizza_sales_clean.sql
 ---Procedure: sp_load_pizza_sales_clean
 -- Description:   Cleans and loads pizza sales data from raw table into a deduplicated, type-correct Silver table
 -- =============================================
